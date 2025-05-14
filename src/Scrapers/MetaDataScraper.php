@@ -2,6 +2,7 @@
 
 namespace App\Scrapers;
 
+use App\MetaData\MetaData;
 use DOMDocument;
 use DOMXPath;
 
@@ -11,7 +12,6 @@ use DOMXPath;
  */
 class MetaDataScraper
 {
-
     private array $config;
 
     public function __construct(array $config)
@@ -54,5 +54,25 @@ class MetaDataScraper
         }
 
         return $data;
+    }
+
+    /**
+     * Loop through the keys so that every field doesn't need to be called 
+     * @param array $scrapedData
+     * @param \App\MetaData\MetaData $metaData
+     * @param string $url
+     * @return MetaData
+     */
+    public function createMetaData(array $scrapedData, MetaData $metaData, string $url): MetaData
+    {
+        foreach (['title', 'authors'] as $key) {
+            if (property_exists($metaData, $key) && array_key_exists($key, $scrapedData)) {
+                $metaData->$key = $scrapedData[$key];
+            }
+        }
+
+        $metaData->url = $url;
+
+        return $metaData;
     }
 }

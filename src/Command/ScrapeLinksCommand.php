@@ -46,6 +46,7 @@ class ScrapeLinksCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        #region Stage 1. Downloading the data from gov.uk
         // So that you can set this at the start
         $userAgent = $input->getOption('user-agent');
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
@@ -69,8 +70,9 @@ class ScrapeLinksCommand extends Command
         // Some output
         $output->writeln("This has found: $numberOfUrls urls");
         $requestedUrls = array_slice($urls, 0, $requestedAmountOfUrls);
-        // End of Stage 1 getting the urls extracted from the pages
+        #endregion
 
+        #region Stage 2. Processing each link
         $config = require 'config/scraper_config.php';
         $scraper = new MetadataScraper($config);
         $pageMetaData = [];
@@ -79,7 +81,6 @@ class ScrapeLinksCommand extends Command
         // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists
         // What could be done is one fork gets the data, the other reads from the array its populating
         foreach ($requestedUrls as $url) {
-            $output->writeln($url);
             $html = $this->fetchPage($url, $userAgent);
 
             if (!$html) {
@@ -87,15 +88,14 @@ class ScrapeLinksCommand extends Command
                 continue;
             }
 
-            // Pass in the page, and the config wanting to be used
+            // Pass in the page, and the config wanting to be used. This process is a bit manual, could create a function that uses the scraper and loops through
+            // in the config we will only get the title and authors, so if we add more there, we can loop through the returned result and append it to the meta data object
             $scrapedData = $scraper->scrape($html, 'gov.uk');
             $metaData = new MetaData();
-            $metaData->title = $scrapedData['title'];
-            $metaData->authors = $scrapedData['authors'];
-            $metaData->url = $url;
-            // Save them to a database at this point really, or just after the loop, and mass save the entities
+            $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
             $pageMetaData[] = $metaData;
         }
+        // With all the entities just created, save them all to a database
 
         foreach ($pageMetaData as $meta) {
             $output->writeln("URL: $meta->url");
@@ -106,6 +106,8 @@ class ScrapeLinksCommand extends Command
 
             $output->writeln('');
         }
+        #endregion
+        
         return Command::SUCCESS;
     }
 

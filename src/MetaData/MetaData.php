@@ -11,6 +11,10 @@ namespace App\MetaData;
  */
 class MetaData
 {
+    /**
+     * The title of the page if it exists
+     * @var 
+     */
     public ?string $title = null;
 
     public array $authors = [];
@@ -19,6 +23,10 @@ class MetaData
 
     public ?string $summary = null;
 
+    /**
+     * The url that the information has been taken from could possibly also do a datetime stamp
+     * @var 
+     */
     public ?string $url = null;
 
     // and so on and so on for all the other bits that may be wanted
