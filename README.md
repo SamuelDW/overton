@@ -6,10 +6,14 @@
 3. Had a think, wrote down some ideas.
 4. Figured out a baseline plan to at least get things up and running
 
+## Requirements
+1. PHP 8.2
+2. Some CLI experience
+
 ## The initial plan
-1. You stated ideally this should be able to be run via the cli, so I have utilised `symfony/console` for this, as I have used this previously. This is just to provide a entry point to the application. The rest will be in extendable, resusable modules.
-2. I will use a sqlite database initially. This is for a very small cache I would say, I could even use it in memory for now, but I will use a database. In a proper application, I would probably use a NoSQL database, for step 2 tips. I may want to add other metadata, and NoSQL would be ideal so that new fields can be added without having to really deal with entries that do not have the field
-3. Use an interface for scrapers to start with. This allows a common pattern for all scrapers.
+1. You stated ideally this should be able to be run via the cli, so I have utilised `symfony/console` for this, as I have used this previously. This is just to provide a entry point to the application. The rest will be in classes called in the command, ideally these could be held in an external library so more than just the command could use them.
+2. I will use a very simple cache with a folder and using `file_put_contents`. In a proper application, I would probably use a NoSQL database, for step 2 tips. I may want to add other metadata, and NoSQL would be ideal so that new fields can be added without having to really deal with entries that do not have the field (otherwise potentially masses of migration files)
+3. Use an interface for scrapers to start with. This allows a common pattern for all scrapers. 
 
 
 ## Ideal flow
@@ -20,6 +24,11 @@
 4. Get the pages for the links found in the first run
 5. Scrape the metadata information from those pages
 6. Store and display the information gained.
+
+## The actual flow
+1. did get the user agent and parts set up
+2. Got the pages for the links and got those being stored whilst extracting the links.
+3. Did create a very tightly coupled scraper for the meta data
 
 ## Structure
 ### Scrapers

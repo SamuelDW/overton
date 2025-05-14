@@ -9,3 +9,17 @@ Thought about storing them, however:
 1. This would create large amounts of storage
 2. If a page is updated, it would still need fetching again
 3. We need the meta data, which can be stored alongside a reference, could have a timestamp of when the data was fetched.
+
+
+## Discussion
+`What other approaches could we take to extracting titles, authors and publication dates from pages like these?`
+
+Check that APIs are used or not for this data already, saves resources scraping if the platform already has this information available via an API
+
+Microdata or json+ld, this may contain all the necessary information or at least parts of it. I've used a small amount for my own projects for google search
+
+Given that a page might not always have these meta tags, we can fall back on some element or patterns such as the `<title>` attribute or `<h1>` or common patterns like Published: Date
+
+Could potentially use Symfony CSS crawler, which could be easier to read quicker 
+
+For anything that falls outside these, log them

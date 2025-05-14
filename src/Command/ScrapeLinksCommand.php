@@ -34,7 +34,7 @@ class ScrapeLinksCommand extends Command
                 'The user agent to use. The default is: OvertonBot/1.0 (+https://www.overton.io)',
                 'OvertonBot/1.0 (+https://www.overton.io)'
             )
-            ->addOption('number-of-urls', null, InputOption::VALUE_OPTIONAL, 'numberOfResultsToParse', 5);
+            ->addOption('number-of-urls', null, InputOption::VALUE_OPTIONAL, 'numberOfResultsToParse', 50);
         // Could set an option to set the delimiter for paginatation, and the url for specific searches, and then could loop through till hitting a error page
     }
 
@@ -51,10 +51,12 @@ class ScrapeLinksCommand extends Command
         $userAgent = $input->getOption('user-agent');
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
         $output->writeln("User agent: $userAgent");
-        $output->writeln("Number of urls to parse: $requestedAmountOfUrls");
+        $output->writeln("Number of urls to parse after fetching results: $requestedAmountOfUrls");
 
         $govUkScraper = new GovUkScraper($userAgent);
 
+        // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page= timestamp for last access so that know how long its 
+        // been since last accessed
         $listingUrls = [
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest',
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=2',
@@ -68,7 +70,7 @@ class ScrapeLinksCommand extends Command
         $numberOfUrls = count($govUkScraper->getUrls());
 
         // Some output
-        $output->writeln("This has found: $numberOfUrls urls");
+        $output->writeln("$numberOfUrls urls to parse for metadata have been found, we will parse the first $requestedAmountOfUrls");
         $requestedUrls = array_slice($urls, 0, $requestedAmountOfUrls);
         #endregion
 
@@ -80,6 +82,7 @@ class ScrapeLinksCommand extends Command
 
         // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists
         // What could be done is one fork gets the data, the other reads from the array its populating so that they could be done at the same time
+        $output->writeln('Now commencing parsing of urls');
         foreach ($requestedUrls as $url) {
             $html = $this->fetchPage($url, $userAgent);
 
@@ -99,8 +102,9 @@ class ScrapeLinksCommand extends Command
         foreach ($pageMetaData as $meta) {
             $output->writeln("URL: $meta->url");
             $output->writeln("Title: $meta->title");
+            $output->writeln('Authors:');
             foreach ($meta->authors as $author) {
-                $output->writeln("Author: $author");
+                $output->writeln($author);
             }
 
             $output->writeln('');
