@@ -44,6 +44,15 @@ i.e
 
 `$lastCallPerDomainAndProxy['whitehouse.gov']['proxy1.example.com'] = timestamp;`
 
+```php
+foreach ($proxies as $proxy) {
+    if (!isBlocked($domain, $proxy) && isAvailable($domain, $proxy)) {
+        assignProxyToTask($task, $proxy);
+        break;
+    }
+}
+```
+
 ## Task
 array 
     url => url to fetch
@@ -51,9 +60,23 @@ array
     next allowed time // enforce the delay
     retry count // if failed how many times
 
+Very small example
+```php
+if (time() < $lastCallPerDomainAndProxy[$domain][$proxy]) {
+    continue; // skip this task, try another
+}
+```
+
 ## Backoff
 when a 429 is recieved, this can be placed in a shared cache so that all workers can check if the domain is blocked, and to hold off on requests to it until it is expired
-`$domainBackoffUntil['whitehouse.gov'] = time() + 3600;`
+```php
+if ($response->getStatusCode() === 429) {
+    $domainBackoffUntil[$domain] = time() + 3600;
+}
+```
 
 Sort tasks by next allowed time, so delays are taken into account, and possible retries are more limited
 Tasks are only taken after the next allowed time is past, so that no domain is hit before its minimum delay
+
+
+The scroll of rough thinking is attached in the docs folder
