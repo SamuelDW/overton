@@ -23,7 +23,6 @@ abstract class AbstractScraper implements PageScraperInterface
         $this->delay = $delay;
 
         $this->cacheLocation = $cacheLocation ?? dirname(__DIR__, 2) . '/cache';
-        // dd($this->cacheLocation);
 
         if (!is_dir($this->cacheLocation)) {
             mkdir($this->cacheLocation, 0777, true);
@@ -85,6 +84,11 @@ abstract class AbstractScraper implements PageScraperInterface
         return $this->cacheLocation . '/' . md5($url) . '.html';
     }
 
+    /**
+     * Formats any relative urls to absolute urls
+     * @param array $links
+     * @return array
+     */
     protected function normalizeLinks(array $links): array
     {
         return array_map(
