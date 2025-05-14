@@ -4,7 +4,7 @@
 1. Read the readme of [Overton Hiring Test](https://github.com/overtonpolicy/Overton-PHP-code-test)
 2. Looked into the DOM PHP libraries
 3. Had a think, wrote down some ideas.
-4. Figured out a baseline plan.
+4. Figured out a baseline plan to at least get things up and running
 
 ## The initial plan
 1. You stated ideally this should be able to be run via the cli, so I have utilised `symfony/console` for this, as I have used this previously. This is just to provide a entry point to the application. The rest will be in extendable, resusable modules.
@@ -12,7 +12,20 @@
 3. Use an interface for scrapers to start with. This allows a common pattern for all scrapers.
 
 
+## Ideal flow
+1. Get the links, user agent etc set up 
+2. Get the pages for the links, store them in the cache if they don't exists
+3. Extract the links and sort them out and store them somewhere
+3. Create the metadata scraper
+4. Get the pages for the links found in the first run
+5. Scrape the metadata information from those pages
+6. Store and display the information gained.
+
 ## Structure
 ### Scrapers
 I have created a base abstract class for the scraper. This will allow future scrapers to inherit off this, keeping logic in one place, other than the extract links, which may require different paths for different sites.
 This has some base defaults for the scrapers, such as a delay, cache location.
+
+
+
+

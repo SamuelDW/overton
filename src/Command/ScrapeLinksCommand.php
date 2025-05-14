@@ -79,7 +79,7 @@ class ScrapeLinksCommand extends Command
         // Now need to get the pages that are found from the above, and grab the meta data from them.
 
         // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists
-        // What could be done is one fork gets the data, the other reads from the array its populating
+        // What could be done is one fork gets the data, the other reads from the array its populating so that they could be done at the same time
         foreach ($requestedUrls as $url) {
             $html = $this->fetchPage($url, $userAgent);
 
@@ -88,8 +88,7 @@ class ScrapeLinksCommand extends Command
                 continue;
             }
 
-            // Pass in the page, and the config wanting to be used. This process is a bit manual, could create a function that uses the scraper and loops through
-            // in the config we will only get the title and authors, so if we add more there, we can loop through the returned result and append it to the meta data object
+            // Scrape and pass in the config value, there could be better ways to do this, although I imagine these will all look roughly the same other than syntax
             $scrapedData = $scraper->scrape($html, 'gov.uk');
             $metaData = new MetaData();
             $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
@@ -107,7 +106,7 @@ class ScrapeLinksCommand extends Command
             $output->writeln('');
         }
         #endregion
-        
+
         return Command::SUCCESS;
     }
 

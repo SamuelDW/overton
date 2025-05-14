@@ -14,4 +14,6 @@ return [
             'type' => 'text',
         ],
     ],
+    // can add more fields as the list goes on
+    // Can add more config like whitehouse etc
 ];
