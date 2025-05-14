@@ -14,10 +14,13 @@ abstract class AbstractScraper implements PageScraperInterface
     protected string $userAgent;
     protected array $urls = [];
 
-    public function __construct(string $userAgent, ?string $baseUrl = null, ?string $cacheLocation = null)
+    protected int $delay = 1;
+
+    public function __construct(string $userAgent, ?string $baseUrl = null, ?string $cacheLocation = null, ?int $delay = 1)
     {
         $this->baseUrl = $baseUrl ?? '';
         $this->userAgent = $userAgent;
+        $this->delay = $delay;
 
         $this->cacheLocation = $cacheLocation ?? dirname(__DIR__, 2) . '/cache';
         // dd($this->cacheLocation);
@@ -40,6 +43,7 @@ abstract class AbstractScraper implements PageScraperInterface
             $html = $this->getPageContent($url);
             $links = $this->extractLinks($html);
             $allLinks = array_merge($allLinks, $this->normalizeLinks($links));
+            sleep($this->delay);
         }
 
         $this->urls = $allLinks;
