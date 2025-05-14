@@ -34,7 +34,7 @@ class ScrapeLinksCommand extends Command
                 'The user agent to use. The default is: OvertonBot/1.0 (+https://www.overton.io)',
                 'OvertonBot/1.0 (+https://www.overton.io)'
             )
-            ->addOption('number-of-urls', null, InputOption::VALUE_OPTIONAL, 'numberOfResultsToParse', 50);
+            ->addOption('number-of-urls', null, InputOption::VALUE_OPTIONAL, 'numberOfResultsToParse', 5);
         // Could set an option to set the delimiter for paginatation, and the url for specific searches, and then could loop through till hitting a error page
     }
 
@@ -60,21 +60,26 @@ class ScrapeLinksCommand extends Command
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=3'
         ];
 
+        // Get the html for the links above, store and cache them
         $govUkScraper->scrape($listingUrls);
+        // Grab the urls to just not call this multiple times
         $urls = $govUkScraper->getUrls();
         $numberOfUrls = count($govUkScraper->getUrls());
 
+        // Some output
         $output->writeln("This has found: $numberOfUrls urls");
-        $requestedUrls = array_slice($urls, 0, 50);
+        $requestedUrls = array_slice($urls, 0, $requestedAmountOfUrls);
+        // End of Stage 1 getting the urls extracted from the pages
 
-        $metaDataScraper = new MetaDataScraper();
-
+        $config = require 'config/scraper_config.php';
+        $scraper = new MetadataScraper($config);
         $pageMetaData = [];
         // Now need to get the pages that are found from the above, and grab the meta data from them.
-        
+
         // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists
         // What could be done is one fork gets the data, the other reads from the array its populating
         foreach ($requestedUrls as $url) {
+            $output->writeln($url);
             $html = $this->fetchPage($url, $userAgent);
 
             if (!$html) {
@@ -82,19 +87,18 @@ class ScrapeLinksCommand extends Command
                 continue;
             }
 
-            $scrapedData = $metaDataScraper->scrape($html);
-
+            // Pass in the page, and the config wanting to be used
+            $scrapedData = $scraper->scrape($html, 'gov.uk');
             $metaData = new MetaData();
             $metaData->title = $scrapedData['title'];
             $metaData->authors = $scrapedData['authors'];
             $metaData->url = $url;
-
-            // Either save them to the database here or add to cache
+            // Save them to a database at this point really, or just after the loop, and mass save the entities
             $pageMetaData[] = $metaData;
         }
 
         foreach ($pageMetaData as $meta) {
-            $output->writeln("URL: $metaData->url");
+            $output->writeln("URL: $meta->url");
             $output->writeln("Title: $meta->title");
             foreach ($meta->authors as $author) {
                 $output->writeln("Author: $author");
