@@ -67,7 +67,7 @@ class ScrapeLinksCommand extends Command
         $govUkScraper->scrape($listingUrls);
         // Grab the urls to just not call this multiple times
         $urls = $govUkScraper->getUrls();
-        $numberOfUrls = count($govUkScraper->getUrls());
+        $numberOfUrls = count($urls);
 
         // Some output
         $output->writeln("$numberOfUrls urls to parse for metadata have been found, we will parse the first $requestedAmountOfUrls");
@@ -75,12 +75,13 @@ class ScrapeLinksCommand extends Command
         #endregion
 
         #region Stage 2. Processing each link
+        // This should either be injected in or in a framework usually available as a default helper
         $config = require 'config/scraper_config.php';
         $scraper = new MetadataScraper($config);
         $pageMetaData = [];
         // Now need to get the pages that are found from the above, and grab the meta data from them.
 
-        // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists
+        // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists (probably what stage 3 is for really)
         // What could be done is one fork gets the data, the other reads from the array its populating so that they could be done at the same time
         $output->writeln('Now commencing parsing of urls');
         foreach ($requestedUrls as $url) {
@@ -97,7 +98,7 @@ class ScrapeLinksCommand extends Command
             $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
             $pageMetaData[] = $metaData;
         }
-        // With all the entities just created, save them all to a database
+        // With all the entities just created, save them all to a database for post processing. Could display a summary of results, rather than every result
 
         foreach ($pageMetaData as $meta) {
             $output->writeln("URL: $meta->url");

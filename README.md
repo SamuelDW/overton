@@ -2,7 +2,7 @@
 
 ## First steps
 1. Read the readme of [Overton Hiring Test](https://github.com/overtonpolicy/Overton-PHP-code-test)
-2. Looked into the DOM PHP libraries
+2. Looked into the DOM PHP libraries as I've not really done any scraping before. I imagined a lot of pattern matching, though being honest, it was more about handling the data afterwards really.
 3. Had a think, wrote down some ideas.
 4. Figured out a baseline plan to at least get things up and running
 
@@ -28,11 +28,13 @@
 ## The actual flow
 1. did get the user agent and parts set up
 2. Got the pages for the links and got those being stored whilst extracting the links.
-3. Did create a very tightly coupled scraper for the meta data
+3. Did create a very tightly coupled scraper for the meta data then made this config based
 
 ## Structure
 ### Scrapers
-I have created a base abstract class for the scraper. This will allow future scrapers to inherit off this, keeping logic in one place, other than the extract links, which may require different paths for different sites.
+I have created a base abstract class for the scraper. This will allow future scrapers to inherit off this, keeping logic in one place, other than the extract links, which may require different paths for different sites. Addendum: This might be better off as a config driven thing, pages will all be HTML, it's only the DOMXPath that will differ, so I started the process of making config files. 
+Probably needs a bit more thought into how the config works, could potentially store this in a database as well, so multiple services can use it.
+
 This has some base defaults for the scrapers, such as a delay, cache location.
 
 

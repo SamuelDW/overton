@@ -19,7 +19,7 @@ class MetaData
 
     public array $authors = [];
 
-    public ?string $publicationDate = null;
+    public ?string $publication = null;
 
     public ?string $summary = null;
 

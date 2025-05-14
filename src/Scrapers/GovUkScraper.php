@@ -15,6 +15,12 @@ class GovUkScraper extends AbstractScraper implements PageScraperInterface
         parent::__construct($userAgent, $baseUrl, $cacheLocation);
     }
 
+    /**
+     * Gets the link results for the search page
+     * This could also be made generic and config driven, so that there is one scraper, and potentially more config. I will leave it for now otherwise I'll be spending hours on this
+     * @param string $html
+     * @return string[]
+     */
     protected function extractLinks(string $html): array
     {
         libxml_use_internal_errors(true);
