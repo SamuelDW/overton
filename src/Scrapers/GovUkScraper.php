@@ -8,6 +8,7 @@ use App\Interface\PageScraperInterface;
 use DOMDocument;
 use DOMXPath;
 
+// Want to make this generic and use a config based scraper
 class GovUkScraper extends AbstractScraper implements PageScraperInterface
 {
     public function __construct(string $userAgent, ?string $baseUrl = 'http://www.gov.uk', ?string $cacheLocation = 'cache/govuk')

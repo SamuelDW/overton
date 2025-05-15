@@ -6,6 +6,7 @@
 3. Proxy manager
 4. Worker pool
 5. backoff manager
+6. Several types of caches
 
 
 ### Event/Worker Queue / Task Dispatcher
@@ -27,7 +28,7 @@ If one IP is banned, still have potentially 19 others to continue scraping, IPS 
 
 
 # Thoughts
-Could potentially cache the search results pages (like the three you've given me)
+Could potentially cache the search results pages (like the three you've given me) either as a hash which is compared after got any results which can be compared to newer fetches
 
 
 ## very rough code
@@ -35,13 +36,18 @@ Could potentially cache the search results pages (like the three you've given me
 ## Queue
 Redis or anything else
 
-Backoffs are seen by all workers, so that domains aren't continually blocked
+Backoffs are seen by all workers, so that domains aren't continually blocked, quick to fetch
 
 ## Proxies
 Keep a map of proxies and when they were last used by domain so that the delay per IP is respected
 Then we can assign a proxy to a task only if it is able to be used from the delays
 i.e
-
+Very small example
+```php
+if (time() < $lastCallPerDomainAndProxy[$domain][$proxy]) {
+    continue; // skip this task, try another
+}
+```
 `$lastCallPerDomainAndProxy['whitehouse.gov']['proxy1.example.com'] = timestamp;`
 
 ```php
@@ -60,12 +66,7 @@ array
     next allowed time // enforce the delay
     retry count // if failed how many times
 
-Very small example
-```php
-if (time() < $lastCallPerDomainAndProxy[$domain][$proxy]) {
-    continue; // skip this task, try another
-}
-```
+
 
 ## Backoff
 when a 429 is recieved, this can be placed in a shared cache so that all workers can check if the domain is blocked, and to hold off on requests to it until it is expired
@@ -79,4 +80,4 @@ Sort tasks by next allowed time, so delays are taken into account, and possible 
 Tasks are only taken after the next allowed time is past, so that no domain is hit before its minimum delay
 
 
-The scroll of rough thinking is attached in the docs folder
+The scroll of rough thinking is attached as `Overton Stage 3 diagram`

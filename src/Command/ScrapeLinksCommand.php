@@ -75,7 +75,7 @@ class ScrapeLinksCommand extends Command
         #endregion
 
         #region Stage 2. Processing each link
-        // This should either be injected in or in a framework usually available as a default helper
+        // This should either be injected in or in a framework usually available as a default helper but potentially could be stored in the database (NoSQL) against the base domain or similar
         $config = require 'config/scraper_config.php';
         $scraper = new MetadataScraper($config);
         $pageMetaData = [];

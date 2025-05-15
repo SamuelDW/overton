@@ -9,11 +9,12 @@
 ## Requirements
 1. PHP 8.2
 2. Some CLI experience
+3. Run `composer install` and then for specific bits see the stage readme
 
 ## The initial plan
 1. You stated ideally this should be able to be run via the cli, so I have utilised `symfony/console` for this, as I have used this previously. This is just to provide a entry point to the application. The rest will be in classes called in the command, ideally these could be held in an external library so more than just the command could use them.
 2. I will use a very simple cache with a folder and using `file_put_contents`. In a proper application, I would probably use a NoSQL database, for step 2 tips. I may want to add other metadata, and NoSQL would be ideal so that new fields can be added without having to really deal with entries that do not have the field (otherwise potentially masses of migration files)
-3. Use an interface for scrapers to start with. This allows a common pattern for all scrapers. 
+3. Use an interface for scrapers to start with. This allows a common pattern for all scrapers. Addendum this could probably be a very generic scraper and do more config based stuff.
 
 
 ## Ideal flow
@@ -28,7 +29,7 @@
 ## The actual flow
 1. did get the user agent and parts set up
 2. Got the pages for the links and got those being stored whilst extracting the links.
-3. Did create a very tightly coupled scraper for the meta data then made this config based
+3. Did create a very tightly coupled scraper for the meta data then made this config based so should be simpler to extend
 
 ## Structure
 ### Scrapers
