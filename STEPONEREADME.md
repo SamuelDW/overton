@@ -6,7 +6,7 @@ It should on first run call the actual pages, and then on further requests use t
 The results are stored against the object
 
 ## Improvements
-Make the scraper generic, like the metadata scraper, could use config based rules, all pages are basically looking for similar data, its just the xpaths that are different. Having a scraper for every page would lead to hundreds of scrapers, its not maintainable in the long run. The config rules could probably be held in a database so that access is available for all services. Many rules, one service.
+Make the scraper generic, like the metadata scraper, could use config based rules, all pages are basically looking for similar data, its just the xpaths that are different. Having a scraper for every page would lead to hundreds of scrapers, its not maintainable in the long run. The config rules could probably be held in a database so that access is available for all services. Many rules, one service. I've stuck an very short example in the `search_config.php` which currently isn't used
 
 The cached files could be  held and hashed and in future at certain intervals, newly fetched and the hashes of the content is compared to see if the content has changed, if so, replace file in the cache and then do some more scraping otherwise ignore
 

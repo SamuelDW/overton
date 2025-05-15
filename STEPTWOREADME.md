@@ -1,7 +1,7 @@
 ## Processes and thoughts
 
 Started with a simple loop to go through the results and get the page. 
-Then once this was working, looked at ways to make it less complex, more generic so that adding new services in theory should be simple
+Then once this was working, looked at ways to make it less complex, more generic so that adding new services in theory should be simple see the `scraper_config.php` for how I've gone about this so far.
 Updating things
 Writing the tests (I know not TDD I'm sorry)
 
@@ -9,6 +9,9 @@ Thought about storing them, however:
 1. This would create large amounts of storage
 2. If a page is updated, it would still need fetching again
 3. We need the meta data, which can be stored alongside a reference, could have a timestamp of when the data was fetched.
+
+## Improvements
+Could store the config in the database, again for availability and so that easier visability or updating via a dashboard etc, rather than a PR request for every change
 
 
 ## Discussion
