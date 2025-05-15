@@ -38,6 +38,6 @@ Probably needs a bit more thought into how the config works, could potentially s
 
 This has some base defaults for the scrapers, such as a delay, cache location.
 
-
+i think this should be a config heavy thing, rather than many scrapers (under the scrapers folder) more scalalable
 
 
