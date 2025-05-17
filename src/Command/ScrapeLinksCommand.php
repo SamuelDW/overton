@@ -5,6 +5,7 @@ namespace App\Command;
 use App\MetaData\MetaData;
 use App\Scrapers\MetaDataScraper;
 use App\Scrapers\GovUkScraper;
+use App\Scrapers\SearchScraper;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -52,8 +53,9 @@ class ScrapeLinksCommand extends Command
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
         $output->writeln("User agent: $userAgent");
         $output->writeln("Number of urls to parse after fetching results: $requestedAmountOfUrls");
+        $searchConfig = require 'config/search_config.php';
 
-        $govUkScraper = new GovUkScraper($userAgent);
+        $searchScraper = new SearchScraper($userAgent, $searchConfig, 'gov.uk');
 
         // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page= timestamp for last access so that know how long its 
         // been since last accessed
@@ -64,9 +66,10 @@ class ScrapeLinksCommand extends Command
         ];
 
         // Get the html for the links above, store and cache them
-        $govUkScraper->scrape($listingUrls);
+        $searchScraper->scrape($listingUrls, 'gov.uk');
+        $urls = $searchScraper->getUrls();
         // Grab the urls to just not call this multiple times
-        $urls = $govUkScraper->getUrls();
+        // $urls = $govUkScraper->getUrls();
         $numberOfUrls = count($urls);
 
         // Some output

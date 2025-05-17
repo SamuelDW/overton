@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Scrapers;
 
 use App\Interface\PageScraperInterface;
+use DOMDocument;
+use DOMXPath;
 use RuntimeException;
 
 abstract class AbstractScraper implements PageScraperInterface
@@ -16,11 +18,14 @@ abstract class AbstractScraper implements PageScraperInterface
 
     protected int $delay = 1;
 
-    public function __construct(string $userAgent, ?string $baseUrl = null, ?string $cacheLocation = null, ?int $delay = 1)
+    protected array $config;
+
+    public function __construct(string $userAgent, array $config, ?string $baseUrl = null, ?string $cacheLocation = null, ?int $delay = 1)
     {
         $this->baseUrl = $baseUrl ?? '';
         $this->userAgent = $userAgent;
         $this->delay = $delay;
+        $this->config = $config;
 
         $this->cacheLocation = $cacheLocation ?? dirname(__DIR__, 2) . '/cache';
 
@@ -34,14 +39,24 @@ abstract class AbstractScraper implements PageScraperInterface
      * @param array $urls
      * @return void
      */
-    public function scrape(array $urls): void
+    public function scrape(array $urls, string $domain): void
     {
+        if (!isset($this->config[$domain])) {
+            throw new RuntimeException("No config found for domain: $domain");
+        }
         $allLinks = [];
+
+        $domainConfig = $this->config[$domain];
+        // dd($domainConfig, 'hi');
 
         foreach ($urls as $url) {
             $html = $this->getPageContent($url);
-            $links = $this->extractLinks($html);
-            $allLinks = array_merge($allLinks, $this->normalizeLinks($links));
+            $data = $this->extractData($html, $domainConfig);
+            // dd($data);
+
+            // $links = $this->extractLinks($html, $domainConfig);
+            $allLinks = array_merge($allLinks, $this->normalizeLinks($data['links']));
+            dd($allLinks);
             sleep($this->delay);
         }
 
@@ -105,5 +120,27 @@ abstract class AbstractScraper implements PageScraperInterface
     /**
      * Subclasses must implement this to define how links are extracted.
      */
-    abstract protected function extractLinks(string $html): array;
+    // abstract protected function extractLinks(string $html, array $config): array;
+
+    public function extractData(string $html, array $config): array
+    {
+        libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        $dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+        // $domainConfig = $this->config[$domain];
+        $data = [];
+
+        foreach ($config as $key => $info) {
+            $nodes = $xpath->query($info['xpath']);
+            foreach ($nodes as $node) {
+                $href = trim($node->getAttribute($info['attribute']));
+                if ($href) {
+                   $data[$key][] = $href; 
+                }
+            }
+        }
+
+        return $data;
+    }
 }
