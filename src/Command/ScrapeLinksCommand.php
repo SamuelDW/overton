@@ -6,6 +6,7 @@ use App\MetaData\MetaData;
 use App\Scrapers\MetaDataScraper;
 use App\Scrapers\GovUkScraper;
 use App\Scrapers\SearchScraper;
+use InvalidArgumentException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,11 +52,7 @@ class ScrapeLinksCommand extends Command
         // So that you can set this at the start
         $userAgent = $input->getOption('user-agent');
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
-        $output->writeln("User agent: $userAgent");
-        $output->writeln("Number of urls to parse after fetching results: $requestedAmountOfUrls");
         $searchConfig = require 'config/search_config.php';
-
-        $searchScraper = new SearchScraper($userAgent, $searchConfig, 'gov.uk');
 
         // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page= timestamp for last access so that know how long its 
         // been since last accessed
@@ -65,11 +62,22 @@ class ScrapeLinksCommand extends Command
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=3'
         ];
 
-        // Get the html for the links above, store and cache them
-        $searchScraper->scrape($listingUrls, 'gov.uk');
+        // This part is a bit inflexible at the moment, could have mixed urls
+        $url = $listingUrls[0];
+        // Get the base url 
+        $baseUrl = $this->getBaseUrl($url);
+        $domain = $this->getDomain($url);
+        $output->writeln([
+            "Base URL: $baseUrl",
+            "Domain: $domain",
+            "Number of urls to parse after fetching results: $requestedAmountOfUrls",
+            "User agent: $userAgent",
+        ]);
+
+        $searchScraper = new SearchScraper($userAgent, $searchConfig, $domain);
+        $searchScraper->scrape($listingUrls, $domain, $baseUrl);
         $urls = $searchScraper->getUrls();
-        // Grab the urls to just not call this multiple times
-        // $urls = $govUkScraper->getUrls();
+
         $numberOfUrls = count($urls);
 
         // Some output
@@ -151,5 +159,39 @@ class ScrapeLinksCommand extends Command
         }
 
         return $result;
+    }
+
+    private function getBaseUrl(string $url): string
+    {
+        $parts = parse_url($url);
+
+        if (!isset($parts['scheme'], $parts['host'])) {
+            throw new InvalidArgumentException("Invalid URL: $url");
+        }
+
+        $scheme = $parts['scheme'];
+        $host = $parts['host'];
+
+        // Optionally include port if it exists
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+        return "$scheme://$host$port";
+    }
+
+    private function getDomain(string $url, bool $stripWww = true): string
+    {
+        $parts = parse_url($url);
+
+        if (!isset($parts['host'])) {
+            throw new InvalidArgumentException("Invalid URL: $url");
+        }
+
+        $host = $parts['host'];
+
+        if ($stripWww && str_starts_with($host, 'www.')) {
+            $host = substr($host, 4);
+        }
+
+        return $host;
     }
 }

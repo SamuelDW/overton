@@ -11,7 +11,7 @@ interface PageScraperInterface
      * @param array $urls
      * @return void
      */
-    public function scrape(array $urls, string $domain);
+    public function scrape(array $urls, string $domain, string $baseUrl);
 
     public function getPageContent(string $url);
 }

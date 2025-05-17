@@ -12,6 +12,9 @@ use RuntimeException;
 abstract class AbstractScraper implements PageScraperInterface
 {
     protected string $baseUrl;
+
+    protected string $domain;
+
     protected string $cacheLocation = __DIR__ . '/cache';
     protected string $userAgent;
     protected array $urls = [];
@@ -39,7 +42,7 @@ abstract class AbstractScraper implements PageScraperInterface
      * @param array $urls
      * @return void
      */
-    public function scrape(array $urls, string $domain): void
+    public function scrape(array $urls, string $domain, string $baseUrl): void
     {
         if (!isset($this->config[$domain])) {
             throw new RuntimeException("No config found for domain: $domain");
@@ -47,12 +50,13 @@ abstract class AbstractScraper implements PageScraperInterface
         $allLinks = [];
 
         $domainConfig = $this->config[$domain];
-        // dd($domainConfig, 'hi');
 
         foreach ($urls as $url) {
             $html = $this->getPageContent($url);
             $data = $this->extractData($html, $domainConfig);
-            // dd($data);
+            dd($baseUrl);
+            
+            // dd($this->normalizeLinks($data['links']));
 
             // $links = $this->extractLinks($html, $domainConfig);
             $allLinks = array_merge($allLinks, $this->normalizeLinks($data['links']));
@@ -104,7 +108,7 @@ abstract class AbstractScraper implements PageScraperInterface
      * @param array $links
      * @return array
      */
-    protected function normalizeLinks(array $links): array
+    protected function normalizeLinks(array $links, string $baseUrl): array
     {
         return array_map(
             fn($link) => str_starts_with($link, 'http') ? $link : rtrim($this->baseUrl, '/') . '/' . ltrim($link, '/'),
