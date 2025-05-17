@@ -47,24 +47,19 @@ abstract class AbstractScraper implements PageScraperInterface
         if (!isset($this->config[$domain])) {
             throw new RuntimeException("No config found for domain: $domain");
         }
-        $allLinks = [];
 
+        $links = [];
         $domainConfig = $this->config[$domain];
 
         foreach ($urls as $url) {
             $html = $this->getPageContent($url);
             $data = $this->extractData($html, $domainConfig);
-            dd($baseUrl);
-            
-            // dd($this->normalizeLinks($data['links']));
-
-            // $links = $this->extractLinks($html, $domainConfig);
-            $allLinks = array_merge($allLinks, $this->normalizeLinks($data['links']));
-            dd($allLinks);
+            $foundLinks = $this->normalizeLinks($data['links'], $baseUrl);
+            $links[] = $foundLinks;
             sleep($this->delay);
         }
-
-        $this->urls = $allLinks;
+        
+        $this->urls = array_merge(...$links);
     }
 
     /**
@@ -110,10 +105,22 @@ abstract class AbstractScraper implements PageScraperInterface
      */
     protected function normalizeLinks(array $links, string $baseUrl): array
     {
-        return array_map(
-            fn($link) => str_starts_with($link, 'http') ? $link : rtrim($this->baseUrl, '/') . '/' . ltrim($link, '/'),
-            $links
-        );
+        // return array_map(
+        //     fn($link) => str_starts_with($link, 'http') ? $link : rtrim($this->baseUrl, '/') . '/' . ltrim($link, '/'),
+        //     $links
+        // );
+
+        return array_map(function ($link) use ($baseUrl) {
+            $link = trim($link);
+
+            // Already an absolute URL
+            if (filter_var($link, FILTER_VALIDATE_URL)) {
+                return $link;
+            }
+
+            // Normalize base and relative path
+            return rtrim($baseUrl, '/') . '/' . ltrim($link, '/');
+        }, $links);
     }
 
     public function getUrls(): array
@@ -140,7 +147,7 @@ abstract class AbstractScraper implements PageScraperInterface
             foreach ($nodes as $node) {
                 $href = trim($node->getAttribute($info['attribute']));
                 if ($href) {
-                   $data[$key][] = $href; 
+                    $data[$key][] = $href;
                 }
             }
         }

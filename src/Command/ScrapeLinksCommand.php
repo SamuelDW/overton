@@ -6,6 +6,7 @@ use App\MetaData\MetaData;
 use App\Scrapers\MetaDataScraper;
 use App\Scrapers\GovUkScraper;
 use App\Scrapers\SearchScraper;
+use App\Utility\Url;
 use InvalidArgumentException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -64,9 +65,8 @@ class ScrapeLinksCommand extends Command
 
         // This part is a bit inflexible at the moment, could have mixed urls
         $url = $listingUrls[0];
-        // Get the base url 
-        $baseUrl = $this->getBaseUrl($url);
-        $domain = $this->getDomain($url);
+        $baseUrl = Url::getBaseUrl($url);
+        $domain = Url::getDomain($url);
         $output->writeln([
             "Base URL: $baseUrl",
             "Domain: $domain",
@@ -77,7 +77,6 @@ class ScrapeLinksCommand extends Command
         $searchScraper = new SearchScraper($userAgent, $searchConfig, $domain);
         $searchScraper->scrape($listingUrls, $domain, $baseUrl);
         $urls = $searchScraper->getUrls();
-
         $numberOfUrls = count($urls);
 
         // Some output
@@ -159,39 +158,5 @@ class ScrapeLinksCommand extends Command
         }
 
         return $result;
-    }
-
-    private function getBaseUrl(string $url): string
-    {
-        $parts = parse_url($url);
-
-        if (!isset($parts['scheme'], $parts['host'])) {
-            throw new InvalidArgumentException("Invalid URL: $url");
-        }
-
-        $scheme = $parts['scheme'];
-        $host = $parts['host'];
-
-        // Optionally include port if it exists
-        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-
-        return "$scheme://$host$port";
-    }
-
-    private function getDomain(string $url, bool $stripWww = true): string
-    {
-        $parts = parse_url($url);
-
-        if (!isset($parts['host'])) {
-            throw new InvalidArgumentException("Invalid URL: $url");
-        }
-
-        $host = $parts['host'];
-
-        if ($stripWww && str_starts_with($host, 'www.')) {
-            $host = substr($host, 4);
-        }
-
-        return $host;
     }
 }
