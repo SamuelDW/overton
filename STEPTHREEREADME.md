@@ -1,42 +1,43 @@
 # Stage 3 Scaling up
 
-## What is probably needed.
-1. A Event/Worker Queue or Task Dispatcher
-2. Rate limiter
-3. Proxy manager
-4. Worker pool
-5. backoff manager
-6. Several types of caches
+## Possible requirements
+1. NoSQL Database (Mongo, Elastic, Dynamo) for Meta data and probably one for searches
+2. Task Manager
+3. Proxy Manager
+4. Domain Delay Registry
+5. Domain Back Off Map
+6. Search page cache?
+7. Rate Limiter
 
 
-### Event/Worker Queue / Task Dispatcher
-#### Why
-Store tasks, each worker can take the next available task so not so much waiting. Could potentially split workers into tasks that take longer, those have more workers dedicated to them 
+1. NoSQL Database
+## Why
+This would be used for the metadata store at a minimum. Fields are flexible, generally higher write throughput. Probably mostly key based lookups, no complex join queries needed.
+Could use it to store and cache the search results from the search type pages
+Could have a separate one for the sources of the articles and their config
 
-### Worker pool
-#### Why
-So that tasks could be run in parallel
+## What to use
+Probably elastic search, its what you use so there is most likely a reason, either for analysis, search or easy to scale, or throughput (writes)
 
-### Rate limiter
-#### Why
-Requests shouldn't be spammed out, runs the risk of bans, plus time to process.
+## How
+Elastic has a very handy composer package `composer require elasticsearch/elasticsearch` and some excellent documentation.
+
+2. Task Manager
+## Why
+Something to control when a task should be run, which proxy to assign and which worker gets the task. 
+
+## What to use
+Many good options, a lot of PHP options, Laravel Queue, RabbitMQ, Symfony Messenger (CakePHP has something but its not the most fleshed out)
+Temporal or something in a different language, the queue doesn't have to be PHP, could use Python for pushing the jobs to the queue, PHP for the workers
+
+ 
+
 
 ### Proxy manager
 #### Why
 So that IPs can be rotated, reduces risk of IP blocks. Can speed up rate of access, 1 access per second per IP, get 20 requests a second potentially
 If one IP is banned, still have potentially 19 others to continue scraping, IPS are seen more like a normal user
 
-
-# Thoughts
-Could potentially cache the search results pages (like the three you've given me) either as a hash which is compared after got any results which can be compared to newer fetches
-
-
-## very rough code
-
-## Queue
-Redis or anything else
-
-Backoffs are seen by all workers, so that domains aren't continually blocked, quick to fetch
 
 ## Proxies
 Keep a map of proxies and when they were last used by domain so that the delay per IP is respected
