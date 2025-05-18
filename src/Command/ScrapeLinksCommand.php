@@ -4,10 +4,8 @@ namespace App\Command;
 
 use App\MetaData\MetaData;
 use App\Scrapers\MetaDataScraper;
-use App\Scrapers\GovUkScraper;
 use App\Scrapers\SearchScraper;
 use App\Utility\Url;
-use InvalidArgumentException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -42,7 +40,7 @@ class ScrapeLinksCommand extends Command
     }
 
     /**
-     * Executes the GovUK scraper
+     * Executes the Scraper
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @return int
@@ -62,7 +60,7 @@ class ScrapeLinksCommand extends Command
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=3'
         ];
 
-        // This part is a bit inflexible at the moment, could have mixed urls so could do this in a loop
+        // This part is a bit inflexible at the moment, could have mixed urls so could do this in a loop for this simple one, otherwise, more workers
         $url = $listingUrls[0];
         $baseUrl = Url::getBaseUrl($url);
         $domain = Url::getDomain($url);
@@ -79,8 +77,11 @@ class ScrapeLinksCommand extends Command
         $normalizedUrls = $searchScraper->normalizeLinks($urls, $baseUrl);
         $numberOfUrls = count($urls);
 
-        // Some output
-        $output->writeln("$numberOfUrls urls to parse for metadata have been found, we will parse the first $requestedAmountOfUrls");
+        $output->writeln([
+            "URLS Found: $numberOfUrls",
+            "URLS to parse: $requestedAmountOfUrls"
+        ]);
+
         $requestedUrls = array_slice($normalizedUrls, 0, $requestedAmountOfUrls);
         #endregion
 
@@ -89,15 +90,15 @@ class ScrapeLinksCommand extends Command
         $config = require 'config/scraper_config.php';
         $scraper = new MetadataScraper($config);
         $pageMetaData = [];
-        // Now need to get the pages that are found from the above, and grab the meta data from them.
 
-        // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists (probably what stage 3 is for really)
-        // What could be done is one fork gets the data, the other reads from the array its populating so that they could be done at the same time
-        $output->writeln('Now commencing parsing of urls');
+        // This is a really big bottleneck so to improve this, either a queue or task manager, plenty of threads, either a worker can tackle one url at a time
+        // Or a chunk at a time
+        // Then a worker fetches the html, grabs the meta data and logs/stores that
         foreach ($requestedUrls as $url) {
             $html = $this->fetchPage($url, $userAgent);
 
             if (!$html) {
+                // Should log this so that it can be looked into
                 $output->writeln("<error>Failed to fetch $url</error>");
                 continue;
             }
@@ -117,7 +118,6 @@ class ScrapeLinksCommand extends Command
 
         return Command::SUCCESS;
     }
-
 
     /**
      * Get an individual page that is not cached for grabbing the meta data
@@ -153,6 +153,12 @@ class ScrapeLinksCommand extends Command
         return $result;
     }
 
+    /**
+     * Write out the meta data in a nice way, so that this could be called anywhere
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param \App\MetaData\MetaData $metaData
+     * @return void
+     */
     private function writeMetaData(OutputInterface $output, MetaData $metaData)
     {
         $output->writeln([
@@ -161,7 +167,7 @@ class ScrapeLinksCommand extends Command
             'Authors:',
         ]);
         foreach ($metaData->authors as $author) {
-            $output->writeln("\t$author");
+            $output->writeln("- $author");
         }
         $output->writeln('');
     }

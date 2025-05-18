@@ -39,7 +39,8 @@ abstract class AbstractScraper implements PageScraperInterface
     }
 
     /**
-     * Gets the links from the pages passed in
+     * Extracts data from the urls given, data is grabbed from the config of the domain passed in.
+     * It then sets the data of the object to an aggregated version of each page
      * @param array $urls
      * @return void
      */
@@ -103,7 +104,9 @@ abstract class AbstractScraper implements PageScraperInterface
     }
 
     /**
-     * Formats any relative urls to absolute urls
+     * Formats any relative urls to absolute urls with the base url passed in
+     * i.e /government/policies/this-is-a-test with baseUrl https://www.gov.uk
+     * becomes https://www.gov.uk/government
      * @param array $links
      * @return array
      */
