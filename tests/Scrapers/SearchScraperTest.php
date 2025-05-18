@@ -13,13 +13,9 @@ class SearchScraperTest extends TestCase
 
     private $config = [
         'gov.uk' => [
-            'title' => [
-                'xpath' => "//meta[@property='og:title']",
-                'attribute' => 'content',
-            ],
-            'authors' => [
-                'xpath' => "//div[contains(@class, 'gem-c-metadata')]//a[contains(@class, 'govuk-link')]",
-                'multiple' => true,
+            'links' => [
+                'xpath' => "//div[@id='js-results']//li/div/a",
+                'attribute' => 'href',
             ],
         ],
     ];
@@ -28,13 +24,15 @@ class SearchScraperTest extends TestCase
     {
         $this->scraper = new SearchScraper('', $this->config, 'gov.uk');
     }
+    // Come back to this one later
+    // public function testGetResults()
+    // {
+    //     $html = file_get_contents(dirname(__DIR__, 1) . '/Fixtures/search_results.html');
+    //     // Not quite sure how to test this one as it is a curl only thing
+    //     $this->scraper->scrape([file_get_contents(dirname(__DIR__, 1) . '/Fixtures/search_results.html')], 'gov.uk');
 
-    public function testGetResults()
-    {
-        // $html = file_get_contents(dirname(__DIR__, 1) . '/Fixtures/search_results.html');
-        // Not quite sure how to test this one as it is a curl only thing
-        // $this->scraper->scrape([file_get_contents(dirname(__DIR__, 1) . '/Fixtures/search_results.html')]);
+    //     $this->assertNotNull($this->scraper->getUrls());
 
-        // Check that the scraper url list is not empty
-    }
+    //     // Check that the scraper url list is not empty
+    // }
 }

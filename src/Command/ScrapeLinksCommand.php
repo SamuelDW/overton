@@ -107,13 +107,10 @@ class ScrapeLinksCommand extends Command
             $scrapedData = $scraper->scrape($html, $domain);
             $metaData = new MetaData();
             $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
+            $this->writeMetaData($output, $metaData);
             $pageMetaData[] = $metaData;
         }
-        // With all the entities just created, save them all to a database for post processing. Could display a summary of results, rather than every result
-
-        foreach ($pageMetaData as $meta) {
-            $this->writeMetaData($output, $meta);
-        }
+        // With all the entities just created, save them all to a database for post processing. Or could save them one at a time, though that does create a lot of input to the database
         #endregion
 
         return Command::SUCCESS;
