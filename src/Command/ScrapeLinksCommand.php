@@ -4,7 +4,8 @@ namespace App\Command;
 
 use App\MetaData\MetaData;
 use App\Scrapers\MetaDataScraper;
-use App\Scrapers\GovUkScraper;
+use App\Scrapers\SearchScraper;
+use App\Utility\Url;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -39,7 +40,7 @@ class ScrapeLinksCommand extends Command
     }
 
     /**
-     * Executes the GovUK scraper
+     * Executes the Scraper
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @return int
@@ -47,15 +48,11 @@ class ScrapeLinksCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         #region Stage 1. Downloading the data from gov.uk
-        // So that you can set this at the start
         $userAgent = $input->getOption('user-agent');
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
-        $output->writeln("User agent: $userAgent");
-        $output->writeln("Number of urls to parse after fetching results: $requestedAmountOfUrls");
+        $searchConfig = require 'config/search_config.php';
 
-        $govUkScraper = new GovUkScraper($userAgent);
-
-        // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page= timestamp for last access so that know how long its 
+        // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page=2 timestamp for last access so that know how long its 
         // been since last accessed
         $listingUrls = [
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest',
@@ -63,15 +60,29 @@ class ScrapeLinksCommand extends Command
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=3'
         ];
 
-        // Get the html for the links above, store and cache them
-        $govUkScraper->scrape($listingUrls);
-        // Grab the urls to just not call this multiple times
-        $urls = $govUkScraper->getUrls();
+        // This part is a bit inflexible at the moment, could have mixed urls so could do this in a loop for this simple one, otherwise, more workers
+        $url = $listingUrls[0];
+        $baseUrl = Url::getBaseUrl($url);
+        $domain = Url::getDomain($url);
+        $output->writeln([
+            "Base URL: $baseUrl",
+            "Domain: $domain",
+            "Number of urls to parse after fetching results: $requestedAmountOfUrls",
+            "User agent: $userAgent",
+        ]);
+
+        $searchScraper = new SearchScraper($userAgent, $searchConfig, $domain);
+        $searchScraper->scrape($listingUrls, $domain);
+        $urls = $searchScraper->getUrls();
+        $normalizedUrls = $searchScraper->normalizeLinks($urls, $baseUrl);
         $numberOfUrls = count($urls);
 
-        // Some output
-        $output->writeln("$numberOfUrls urls to parse for metadata have been found, we will parse the first $requestedAmountOfUrls");
-        $requestedUrls = array_slice($urls, 0, $requestedAmountOfUrls);
+        $output->writeln([
+            "URLS Found: $numberOfUrls",
+            "URLS to parse: $requestedAmountOfUrls"
+        ]);
+
+        $requestedUrls = array_slice($normalizedUrls, 0, $requestedAmountOfUrls);
         #endregion
 
         #region Stage 2. Processing each link
@@ -79,42 +90,31 @@ class ScrapeLinksCommand extends Command
         $config = require 'config/scraper_config.php';
         $scraper = new MetadataScraper($config);
         $pageMetaData = [];
-        // Now need to get the pages that are found from the above, and grab the meta data from them.
 
-        // This is a really big bottleneck, so I would probably use either worker forks or async or a queue/event listener cause otherwise it would take forever for longer lists (probably what stage 3 is for really)
-        // What could be done is one fork gets the data, the other reads from the array its populating so that they could be done at the same time
-        $output->writeln('Now commencing parsing of urls');
+        // This is a really big bottleneck so to improve this, either a queue or task manager, plenty of threads, either a worker can tackle one url at a time
+        // Or a chunk at a time
+        // Then a worker fetches the html, grabs the meta data and logs/stores that
         foreach ($requestedUrls as $url) {
             $html = $this->fetchPage($url, $userAgent);
 
             if (!$html) {
+                // Should log this so that it can be looked into
                 $output->writeln("<error>Failed to fetch $url</error>");
                 continue;
             }
 
             // Scrape and pass in the config value, there could be better ways to do this, although I imagine these will all look roughly the same other than syntax
-            $scrapedData = $scraper->scrape($html, 'gov.uk');
+            $scrapedData = $scraper->scrape($html, $domain);
             $metaData = new MetaData();
             $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
+            $this->writeMetaData($output, $metaData);
             $pageMetaData[] = $metaData;
         }
-        // With all the entities just created, save them all to a database for post processing. Could display a summary of results, rather than every result
-
-        foreach ($pageMetaData as $meta) {
-            $output->writeln("URL: $meta->url");
-            $output->writeln("Title: $meta->title");
-            $output->writeln('Authors:');
-            foreach ($meta->authors as $author) {
-                $output->writeln($author);
-            }
-
-            $output->writeln('');
-        }
+        // With all the entities just created, save them all to a database for post processing. Or could save them one at a time, though that does create a lot of input to the database
         #endregion
 
         return Command::SUCCESS;
     }
-
 
     /**
      * Get an individual page that is not cached for grabbing the meta data
@@ -148,5 +148,24 @@ class ScrapeLinksCommand extends Command
         }
 
         return $result;
+    }
+
+    /**
+     * Write out the meta data in a nice way, so that this could be called anywhere
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param \App\MetaData\MetaData $metaData
+     * @return void
+     */
+    private function writeMetaData(OutputInterface $output, MetaData $metaData)
+    {
+        $output->writeln([
+            "URL: $metaData->url",
+            "Title: $metaData->title",
+            'Authors:',
+        ]);
+        foreach ($metaData->authors as $author) {
+            $output->writeln("- $author");
+        }
+        $output->writeln('');
     }
 }

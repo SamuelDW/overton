@@ -7,7 +7,7 @@ return [
     'gov.uk' => [
         'links' => [
             'xpath' => "//div[@id='js-results']//li/div/a",
-            'attribute' => 'content',
+            'attribute' => 'href',
         ],
     ],
 ];

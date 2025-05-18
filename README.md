@@ -5,6 +5,9 @@
 2. Looked into the DOM PHP libraries as I've not really done any scraping before. I imagined a lot of pattern matching, though being honest, it was more about handling the data afterwards really.
 3. Had a think, wrote down some ideas.
 4. Figured out a baseline plan to at least get things up and running
+5. Get the baseline working. Then look at improvements
+6. Have a break, have a KitKat.
+7. Get the metadata out and display it.
 
 ## Requirements
 1. PHP 8.2
@@ -24,20 +27,14 @@
 3. Create the metadata scraper
 4. Get the pages for the links found in the first run
 5. Scrape the metadata information from those pages
-6. Store and display the information gained.
+6. Store and/or display the information gained.
 
-## The actual flow
-1. did get the user agent and parts set up
-2. Got the pages for the links and got those being stored whilst extracting the links.
-3. Did create a very tightly coupled scraper for the meta data then made this config based so should be simpler to extend
 
 ## Structure
-### Scrapers
-I have created a base abstract class for the scraper. This will allow future scrapers to inherit off this, keeping logic in one place, other than the extract links, which may require different paths for different sites. Addendum: This might be better off as a config driven thing, pages will all be HTML, it's only the DOMXPath that will differ, so I started the process of making config files. 
-Probably needs a bit more thought into how the config works, could potentially store this in a database as well, so multiple services can use it.
+I have developed this so it should be fairly straighforward to scrape new sites by placing them in the config file. 
+There is a search scraper, for parsing pages that are full of search results, and a metadata scraper, for taking the results of the search scraper and grabbing the meta data.
+Config files are held under `/config` as search and scraper (searching and metadata respectively)
+A utility file for grabbing domains
 
-This has some base defaults for the scrapers, such as a delay, cache location.
-
-i think this should be a config heavy thing, rather than many scrapers (under the scrapers folder) more scalalable
 
 
