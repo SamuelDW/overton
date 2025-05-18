@@ -11,18 +11,53 @@ use RuntimeException;
 
 abstract class AbstractScraper implements PageScraperInterface
 {
+    /**
+     * The base url i.e https://www.
+     * @var string
+     */
     protected string $baseUrl;
 
+    /**
+     * The domain of a url i.e gov.uk
+     * @var string
+     */
     protected string $domain;
 
+    /**
+     * Default place for the caching of HTML pages
+     * @var string
+     */
     protected string $cacheLocation = __DIR__ . '/cache';
+
+    /**
+     * The user agent to use for making a request to a page.
+     * This could be able to be set as it runs
+     * @var string
+     */
     protected string $userAgent;
+
+    /**
+     * The URLs that are discovered from the search pages
+     * @var array
+     */
     protected array $urls = [];
 
+    /**
+     * The default delay inbetween requests, this could be modified so that if the page is from the cache, no delay is set
+     * @var int
+     */
     protected int $delay = 1;
 
+    /**
+     * The config for searching
+     * @var array
+     */
     protected array $config;
 
+    /**
+     * The data retrieved from a request
+     * @var array
+     */
     protected array $data;
 
     public function __construct(string $userAgent, array $config, ?string $baseUrl = null, ?string $cacheLocation = null, ?int $delay = 1)
@@ -98,6 +133,11 @@ abstract class AbstractScraper implements PageScraperInterface
         return $html;
     }
 
+    /**
+     * Gets the name of the file in the cache
+     * @param string $url
+     * @return string
+     */
     protected function cacheFilename(string $url): string
     {
         return $this->cacheLocation . '/' . md5($url) . '.html';
@@ -125,6 +165,10 @@ abstract class AbstractScraper implements PageScraperInterface
         }, $links);
     }
 
+    /**
+     * Return a list of the urls attached to the object
+     * @return array
+     */
     public function getUrls(): array
     {
         return $this->data['links'];
