@@ -23,13 +23,14 @@ abstract class AbstractScraper implements PageScraperInterface
 
     protected array $config;
 
+    protected array $data;
+
     public function __construct(string $userAgent, array $config, ?string $baseUrl = null, ?string $cacheLocation = null, ?int $delay = 1)
     {
         $this->baseUrl = $baseUrl ?? '';
         $this->userAgent = $userAgent;
         $this->delay = $delay;
         $this->config = $config;
-
         $this->cacheLocation = $cacheLocation ?? dirname(__DIR__, 2) . '/cache';
 
         if (!is_dir($this->cacheLocation)) {
@@ -42,24 +43,27 @@ abstract class AbstractScraper implements PageScraperInterface
      * @param array $urls
      * @return void
      */
-    public function scrape(array $urls, string $domain, string $baseUrl): void
+    public function scrape(array $urls, string $domain): void
     {
         if (!isset($this->config[$domain])) {
             throw new RuntimeException("No config found for domain: $domain");
         }
 
-        $links = [];
+        $aggregatedData = [];
         $domainConfig = $this->config[$domain];
 
         foreach ($urls as $url) {
             $html = $this->getPageContent($url);
             $data = $this->extractData($html, $domainConfig);
-            $foundLinks = $this->normalizeLinks($data['links'], $baseUrl);
-            $links[] = $foundLinks;
+
+            foreach ($data as $key => $value) {
+                $aggregatedData[$key] = array_merge($aggregatedData[$key] ?? [], $value);
+            }
+
             sleep($this->delay);
         }
-        
-        $this->urls = array_merge(...$links);
+
+        $this->data = $aggregatedData;
     }
 
     /**
@@ -103,13 +107,8 @@ abstract class AbstractScraper implements PageScraperInterface
      * @param array $links
      * @return array
      */
-    protected function normalizeLinks(array $links, string $baseUrl): array
+    public function normalizeLinks(array $links, string $baseUrl): array
     {
-        // return array_map(
-        //     fn($link) => str_starts_with($link, 'http') ? $link : rtrim($this->baseUrl, '/') . '/' . ltrim($link, '/'),
-        //     $links
-        // );
-
         return array_map(function ($link) use ($baseUrl) {
             $link = trim($link);
 
@@ -125,31 +124,30 @@ abstract class AbstractScraper implements PageScraperInterface
 
     public function getUrls(): array
     {
-        return $this->urls;
+        return $this->data['links'];
     }
 
     /**
-     * Subclasses must implement this to define how links are extracted.
+     * Gets all the data according to the config passed in
+     * @param string $html the html page
+     * @param array $config the domain conig
+     * @return string[][]
      */
-    // abstract protected function extractLinks(string $html, array $config): array;
-
     public function extractData(string $html, array $config): array
     {
         libxml_use_internal_errors(true);
         $dom = new DOMDocument();
         $dom->loadHTML($html);
         $xpath = new DOMXPath($dom);
-        // $domainConfig = $this->config[$domain];
         $data = [];
 
         foreach ($config as $key => $info) {
             $nodes = $xpath->query($info['xpath']);
+            $values = [];
             foreach ($nodes as $node) {
-                $href = trim($node->getAttribute($info['attribute']));
-                if ($href) {
-                    $data[$key][] = $href;
-                }
+                $values[] = trim($node->getAttribute($info['attribute']));
             }
+            $data[$key] = $values;
         }
 
         return $data;

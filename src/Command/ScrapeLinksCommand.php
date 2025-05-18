@@ -50,12 +50,11 @@ class ScrapeLinksCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         #region Stage 1. Downloading the data from gov.uk
-        // So that you can set this at the start
         $userAgent = $input->getOption('user-agent');
         $requestedAmountOfUrls = $input->getOption('number-of-urls');
         $searchConfig = require 'config/search_config.php';
 
-        // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page= timestamp for last access so that know how long its 
+        // These could potentially be stored, maybe the base url is everything up to the pagination, we store the pagination type i.e page=2 timestamp for last access so that know how long its 
         // been since last accessed
         $listingUrls = [
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest',
@@ -63,7 +62,7 @@ class ScrapeLinksCommand extends Command
             'https://www.gov.uk/search/policy-papers-and-consultations?content_store_document_type%5B%5D=policy_papers&order=updated-newest&page=3'
         ];
 
-        // This part is a bit inflexible at the moment, could have mixed urls
+        // This part is a bit inflexible at the moment, could have mixed urls so could do this in a loop
         $url = $listingUrls[0];
         $baseUrl = Url::getBaseUrl($url);
         $domain = Url::getDomain($url);
@@ -75,13 +74,14 @@ class ScrapeLinksCommand extends Command
         ]);
 
         $searchScraper = new SearchScraper($userAgent, $searchConfig, $domain);
-        $searchScraper->scrape($listingUrls, $domain, $baseUrl);
+        $searchScraper->scrape($listingUrls, $domain);
         $urls = $searchScraper->getUrls();
+        $normalizedUrls = $searchScraper->normalizeLinks($urls, $baseUrl);
         $numberOfUrls = count($urls);
 
         // Some output
         $output->writeln("$numberOfUrls urls to parse for metadata have been found, we will parse the first $requestedAmountOfUrls");
-        $requestedUrls = array_slice($urls, 0, $requestedAmountOfUrls);
+        $requestedUrls = array_slice($normalizedUrls, 0, $requestedAmountOfUrls);
         #endregion
 
         #region Stage 2. Processing each link
@@ -103,7 +103,7 @@ class ScrapeLinksCommand extends Command
             }
 
             // Scrape and pass in the config value, there could be better ways to do this, although I imagine these will all look roughly the same other than syntax
-            $scrapedData = $scraper->scrape($html, 'gov.uk');
+            $scrapedData = $scraper->scrape($html, $domain);
             $metaData = new MetaData();
             $metaData = $scraper->createMetaData($scrapedData, $metaData, $url);
             $pageMetaData[] = $metaData;
@@ -111,14 +111,7 @@ class ScrapeLinksCommand extends Command
         // With all the entities just created, save them all to a database for post processing. Could display a summary of results, rather than every result
 
         foreach ($pageMetaData as $meta) {
-            $output->writeln("URL: $meta->url");
-            $output->writeln("Title: $meta->title");
-            $output->writeln('Authors:');
-            foreach ($meta->authors as $author) {
-                $output->writeln($author);
-            }
-
-            $output->writeln('');
+            $this->writeMetaData($output, $meta);
         }
         #endregion
 
@@ -158,5 +151,18 @@ class ScrapeLinksCommand extends Command
         }
 
         return $result;
+    }
+
+    private function writeMetaData(OutputInterface $output, MetaData $metaData)
+    {
+        $output->writeln([
+            "URL: $metaData->url",
+            "Title: $metaData->title",
+            'Authors:',
+        ]);
+        foreach ($metaData->authors as $author) {
+            $output->writeln("\t$author");
+        }
+        $output->writeln('');
     }
 }
