@@ -30,11 +30,11 @@ Something to control when a task should be run, which proxy to assign and which 
 Many good options, a lot of PHP options, Laravel Queue, RabbitMQ, Symfony Messenger (CakePHP has something but its not the most fleshed out)
 Temporal or something in a different language, the queue doesn't have to be PHP, could use Python for pushing the jobs to the queue, PHP for the workers
 
+## How
+Not entirely sure on this part, never used one before. Something the docs cover in plenty of detail I'm sure! I imagine JSON objects are task objects, as all languages support JSON
  
-
-
-### Proxy manager
-#### Why
+3. Proxy Manager
+## Why
 So that IPs can be rotated, reduces risk of IP blocks. Can speed up rate of access, 1 access per second per IP, get 20 requests a second potentially
 If one IP is banned, still have potentially 19 others to continue scraping, IPS are seen more like a normal user
 
